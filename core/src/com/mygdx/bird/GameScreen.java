@@ -19,6 +19,7 @@ public class GameScreen implements Screen {
 
     Texture backgroundImage;
     Texture birdImage;
+    Texture starImage;
     Texture pipeUpImage;
     Texture pipeDownImage;
 
@@ -27,12 +28,20 @@ public class GameScreen implements Screen {
     Rectangle player;
 
     boolean dead;
+    boolean wish;
+    boolean invencible;
     float speedy;
+    float speedyStar;
     float gravity;
     float score;
+    long spling;
+    boolean algo;
 
+    Rectangle star;
     Array<Rectangle> obstacles;
     long lastObstacleTime;
+    long lastStarTime;
+    long invencibleTime;
 
     Sound flapSound;
     Sound failSound;
@@ -44,6 +53,7 @@ public class GameScreen implements Screen {
         // load the images
         backgroundImage = new Texture(Gdx.files.internal("background.png"));
         birdImage = new Texture(Gdx.files.internal("bird.png"));
+        starImage = new Texture(Gdx.files.internal("star.png"));
         pipeUpImage = new Texture(Gdx.files.internal("pipe_up.png"));
         pipeDownImage = new Texture(Gdx.files.internal("pipe_down.png"));
 
@@ -58,10 +68,20 @@ public class GameScreen implements Screen {
         player.width = 64;
         player.height = 45;
 
+        star = new Rectangle();
+        star.width = 50;
+        star.height = 50;
+        star.x = 800;
+        star.y = 480 / 2 - 45 / 2;
+
         speedy = 0;
+        speedyStar = 0;
         gravity = 850f;
         dead = false;
         score = 0;
+        wish = true;
+        invencible = false;
+        algo = false;
 
         // create the obstacles array and spawn the first obstacle
         obstacles = new Array<Rectangle>();
@@ -89,7 +109,19 @@ public class GameScreen implements Screen {
         // all obstacles
         game.batch.begin();
         game.batch.draw(backgroundImage, 0, 0);
-        game.batch.draw(birdImage, player.x, player.y);
+        if (invencible && TimeUtils.nanoTime() - spling > 5000) {
+            if (algo) {
+                game.batch.draw(starImage, player.x, player.y);
+                algo = false;
+            } else {
+                game.batch.draw(birdImage, player.x, player.y);
+                algo = true;
+            }
+            spling = TimeUtils.nanoTime();
+        } else {
+            game.batch.draw(birdImage, player.x, player.y);
+        }
+
         // Dibuixa els obstacles: Els parells son tuberia inferior,
         // els imparells tuberia superior
         for(int i = 0; i < obstacles.size; i++)
@@ -99,6 +131,9 @@ public class GameScreen implements Screen {
                     obstacles.get(i).x, obstacles.get(i).y);
         }
         game.font.draw(game.batch, "Score: " + (int)score, 10, 470);
+        if (wish) {
+            game.batch.draw(starImage, star.x, star.y);
+        }
         game.batch.end();
 
         // process user input
@@ -116,16 +151,32 @@ public class GameScreen implements Screen {
         // Comprova si cal generar un obstacle nou
         if (TimeUtils.nanoTime() - lastObstacleTime > 1500000000)
             spawnObstacle();
+        if (TimeUtils.nanoTime() - lastStarTime > 7500000000L && !wish)
+            spawnStar();
+        if (TimeUtils.nanoTime() - invencibleTime > 3000000000L)
+            invencible = false;
         // Mou els obstacles. Elimina els que estan fora de la pantalla
         // Comprova si el jugador colisiona amb un obstacle,
         // llavors game over
+        if (star.overlaps(player)){
+            starImage = new Texture(Gdx.files.internal("emptystar.png"));
+            invencible = true;
+            invencibleTime = TimeUtils.nanoTime();
+            wish = false;
+            lastStarTime = TimeUtils.nanoTime();
+            star.x = 0;
+            spling = TimeUtils.nanoTime();
+        }
+        if (wish) {
+            star.x -= 200 * Gdx.graphics.getDeltaTime();
+        }
         Iterator<Rectangle> iter = obstacles.iterator();
         while (iter.hasNext()) {
             Rectangle tuberia = iter.next();
             tuberia.x -= 200 * Gdx.graphics.getDeltaTime();
             if (tuberia.x < -64)
                 iter.remove();
-            if (tuberia.overlaps(player)) {
+            if (tuberia.overlaps(player) && !invencible) {
                 dead = true;
             }
         }
@@ -170,6 +221,15 @@ public class GameScreen implements Screen {
         lastObstacleTime = TimeUtils.nanoTime();
     }
 
+    private void spawnStar() {
+        starImage = new Texture(Gdx.files.internal("star.png"));
+        // Calcula la alçada de l'obstacle aleatòriament
+        wish = true;
+        // Crea dos obstacles: Una tubería superior i una inferior
+        star.x = 800;
+        star.y = 200;
+    }
+
     @Override
     public void resize(int width, int height) {
     }
@@ -192,6 +252,7 @@ public class GameScreen implements Screen {
 
     @Override
     public void dispose() {
+        starImage.dispose();
         pipeUpImage.dispose();
         pipeDownImage.dispose();
         failSound.dispose();
