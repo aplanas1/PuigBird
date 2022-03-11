@@ -39,12 +39,21 @@ public class GameScreen implements Screen {
 
     Rectangle star;
     Array<Rectangle> obstacles;
+    Array<Rectangle> brokenobstacles;
     long lastObstacleTime;
+    long lastObstacleTime2;
     long lastStarTime;
     long invencibleTime;
 
     Sound flapSound;
     Sound failSound;
+
+    Rectangle part1pipe;
+    Rectangle part2Pipe;
+
+    Texture part1PipeUpImage;
+    Texture part2PipeUpImage;
+
 
     public GameScreen(final Bird gam) {
 
@@ -57,9 +66,14 @@ public class GameScreen implements Screen {
         pipeUpImage = new Texture(Gdx.files.internal("pipe_up.png"));
         pipeDownImage = new Texture(Gdx.files.internal("pipe_down.png"));
 
+        part1pipe = new Rectangle();
+        part2Pipe = new Rectangle();
+
         // create the camera and the SpriteBatch
         camera = new OrthographicCamera();
         camera.setToOrtho(false, 800, 480);
+
+        brokenobstacles = new Array<Rectangle>();
 
         // create a Rectangle to logically represent the player
         player = new Rectangle();
@@ -73,6 +87,9 @@ public class GameScreen implements Screen {
         star.height = 50;
         star.x = 800;
         star.y = 480 / 2 - 45 / 2;
+
+        part1PipeUpImage = new Texture(Gdx.files.internal("brokenpipe1.png"));
+        part2PipeUpImage = new Texture(Gdx.files.internal("brokenpipe2.png"));
 
         speedy = 0;
         speedyStar = 0;
@@ -109,7 +126,7 @@ public class GameScreen implements Screen {
         // all obstacles
         game.batch.begin();
         game.batch.draw(backgroundImage, 0, 0);
-        if (invencible && TimeUtils.nanoTime() - spling > 5000) {
+        if (invencible && TimeUtils.nanoTime() - spling > 30000000) {
             if (algo) {
                 game.batch.draw(starImage, player.x, player.y);
                 algo = false;
@@ -130,10 +147,15 @@ public class GameScreen implements Screen {
                     i % 2 == 0 ? pipeUpImage : pipeDownImage,
                     obstacles.get(i).x, obstacles.get(i).y);
         }
-        game.font.draw(game.batch, "Score: " + (int)score, 10, 470);
+        for(int i = 0; i < brokenobstacles.size; i++) {
+            game.batch.draw(
+                    i % 2 == 0 ? part1PipeUpImage : part2PipeUpImage,
+                    brokenobstacles.get(i).x, brokenobstacles.get(i).y);
+        }
         if (wish) {
             game.batch.draw(starImage, star.x, star.y);
         }
+        game.font.draw(game.batch, "Score: " + (int)score, 10, 470);
         game.batch.end();
 
         // process user input
@@ -171,15 +193,46 @@ public class GameScreen implements Screen {
             star.x -= 200 * Gdx.graphics.getDeltaTime();
         }
         Iterator<Rectangle> iter = obstacles.iterator();
+        int i = 0;
         while (iter.hasNext()) {
             Rectangle tuberia = iter.next();
             tuberia.x -= 200 * Gdx.graphics.getDeltaTime();
             if (tuberia.x < -64)
                 iter.remove();
-            if (tuberia.overlaps(player) && !invencible) {
-                dead = true;
+            if (tuberia.overlaps(player)) {
+                if (!invencible){
+                    dead = true;
+                }
+                if(i % 2 !=0){
+                    spawnBrokenObstacle(tuberia.x,tuberia.y);
+                    tuberia.y -=600;
+                }else{
+                    //spawnBrokenObstacle(tuberia.x,tuberia.y);
+                    //tuberia.y -=600;
+                }
             }
+            // DE ALAN
+            Iterator<Rectangle> brokeniter = brokenobstacles.iterator();
+            int j = 0;
+
+            while (brokeniter.hasNext()){
+                Rectangle tuberiarota = brokeniter.next();
+                //tuberiarota.y = pipeYposition - 100;
+                if(j % 2 ==0){
+                    //tuberiarota.x = pipeXposition;
+                    //tuberiarota.y = pipeYposition;
+                    tuberiarota.x += 0.5;
+                    tuberiarota.y += 0.5;
+                }else{
+                    tuberiarota.x += 0.5;
+                    tuberiarota.y -= 0.5;
+                }
+                j++;
+            }
+            i++;
         }
+
+
 
         // Comprova que el jugador no es surt de la pantalla.
         // Si surt per la part inferior, game over
@@ -219,6 +272,25 @@ public class GameScreen implements Screen {
         pipe2.height = 230;
         obstacles.add(pipe2);
         lastObstacleTime = TimeUtils.nanoTime();
+    }
+
+    private void spawnBrokenObstacle(float x , float y){
+        // Calcula la alçada de l'obstacle aleatòriament
+        //float holey = MathUtils.random(50, 230);
+        // Crea dos obstacles: Una tubería superior i una inferior
+        Rectangle brokenpipe1 = new Rectangle();
+        brokenpipe1.x = x;
+        brokenpipe1.y =  y;
+        brokenpipe1.width = 64;
+        brokenpipe1.height = 230;
+        brokenobstacles.add(brokenpipe1);
+        Rectangle brokenpipe2 = new Rectangle();
+        brokenpipe2.x = x;
+        brokenpipe2.y = y - 20;
+        brokenpipe2.width = 64;
+        brokenpipe2.height = 230;
+        brokenobstacles.add(brokenpipe2);
+        lastObstacleTime2 = TimeUtils.nanoTime();
     }
 
     private void spawnStar() {
