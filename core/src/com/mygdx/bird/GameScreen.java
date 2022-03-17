@@ -36,6 +36,8 @@ public class GameScreen implements Screen {
     float score;
     long spling;
     boolean algo;
+    boolean t;
+    long temp;
 
     Rectangle star;
     Array<Rectangle> obstacles;
@@ -61,7 +63,7 @@ public class GameScreen implements Screen {
 
         // load the images
         backgroundImage = new Texture(Gdx.files.internal("background.png"));
-        birdImage = new Texture(Gdx.files.internal("bird.png"));
+        birdImage = new Texture(Gdx.files.internal("bird2.png"));
         starImage = new Texture(Gdx.files.internal("star.png"));
         pipeUpImage = new Texture(Gdx.files.internal("pipe_up.png"));
         pipeDownImage = new Texture(Gdx.files.internal("pipe_down.png"));
@@ -90,6 +92,7 @@ public class GameScreen implements Screen {
 
         part1PipeUpImage = new Texture(Gdx.files.internal("brokenpipe1.png"));
         part2PipeUpImage = new Texture(Gdx.files.internal("brokenpipe2.png"));
+        temp = 0;
 
         speedy = 0;
         speedyStar = 0;
@@ -99,6 +102,7 @@ public class GameScreen implements Screen {
         wish = true;
         invencible = false;
         algo = false;
+        t = true;
 
         // create the obstacles array and spawn the first obstacle
         obstacles = new Array<Rectangle>();
@@ -162,6 +166,13 @@ public class GameScreen implements Screen {
         if (Gdx.input.justTouched()) {
             speedy = 400f;
             flapSound.play();
+            birdImage = new Texture(Gdx.files.internal("bird.png"));
+            temp = TimeUtils.nanoTime();
+            t = false;
+        }
+        if (TimeUtils.nanoTime() - temp > 210000){
+            birdImage = new Texture(Gdx.files.internal("bird2.png"));
+            t = true;
         }
         //Actualitza la posició del jugador amb la velocitat vertical
         player.y += speedy * Gdx.graphics.getDeltaTime();
