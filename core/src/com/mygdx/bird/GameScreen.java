@@ -170,7 +170,7 @@ public class GameScreen implements Screen {
             temp = TimeUtils.nanoTime();
             t = false;
         }
-        if (TimeUtils.nanoTime() - temp > 210000){
+        if (TimeUtils.nanoTime() - temp > 100000000){
             birdImage = new Texture(Gdx.files.internal("bird2.png"));
             t = true;
         }
